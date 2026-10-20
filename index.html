@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Conti eventi</title>
+<meta name="theme-color" content="#7f2a2a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Conti eventi">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icona-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script src="config.js"></script>
+<style>
+  :root {
+    --bg: #f6f1e9; --card: #fffdf9; --ink: #3b2a20; --muted: #8a7768;
+    --accent: #7f2a2a; --accent-soft: #e3cfc8; --ok: #2f6b3a; --ok-soft: #dcebdc;
+    --warn: #9a6a12; --warn-soft: #f4e6c4; --line: #e6dccf; --err: #a12a2a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--accent); color: #fff;
+    padding: calc(14px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) 14px calc(16px + env(safe-area-inset-left)); display: flex; align-items: center; gap: 10px; }
+  header h1 { font-size: 18px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header button { background: rgba(255,255,255,.18); color: #fff; border: 0; border-radius: 10px;
+    padding: 8px 12px; font-size: 15px; }
+  main { padding: 12px 16px 96px; max-width: 640px; margin: 0 auto; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+  .ev { display: block; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .ev h2 { font-size: 17px; margin: 0 0 2px; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .nums div { font-size: 12px; color: var(--muted); }
+  .nums b { display: block; font-size: 16px; color: var(--ink); }
+  .neg { color: var(--err) !important; }
+  .tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
+  .tabs button { flex: 1; padding: 10px 0; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink); font-size: 15px; }
+  .tabs button.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  input, select { width: 100%; font-size: 16px; padding: 11px 12px; border: 1px solid var(--line);
+    border-radius: 10px; background: #fff; color: var(--ink); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  .chips { display: flex; gap: 6px; margin: 10px 0; }
+  .chips button { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); font-size: 14px; }
+  .chips button.on { background: var(--accent-soft); border-color: var(--accent-soft); }
+  .person { display: flex; align-items: center; gap: 10px; }
+  .person .who { flex: 1; min-width: 0; }
+  .person button.who { background: none; border: 0; padding: 0; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+  .person .who .chev { display: inline; font-size: 12px; color: var(--muted); }
+  .risp { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); display: grid; gap: 10px; font-size: 15px; }
+  .risp > div > div:last-child { white-space: pre-wrap; word-break: break-word; }
+  .person .who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .person .who span { display: block; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pay { min-width: 112px; padding: 10px 8px; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--warn-soft); color: var(--warn); font-size: 14px; font-weight: 600; }
+  .pay.si { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-soft); }
+  .pay.conf { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .row2 { display: flex; gap: 8px; align-items: center; margin-top: 8px; font-size: 14px; }
+  .link { background: none; border: 0; color: var(--accent); font-size: 14px; padding: 4px 0; text-decoration: underline; }
+  .off { display: flex; gap: 6px; margin-top: 8px; }
+  .off input { flex: 1; }
+  .btn { width: 100%; padding: 13px; border: 0; border-radius: 12px; background: var(--accent); color: #fff;
+    font-size: 16px; font-weight: 600; margin-top: 14px; }
+  .btn.small { width: auto; padding: 10px 14px; margin: 0; font-size: 15px; }
+  .btn.ghost { background: var(--card); color: var(--accent); border: 1px solid var(--line); }
+  .pill { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); }
+  .tot { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); }
+  .tot:last-child { border-bottom: 0; }
+  .tot.big { font-weight: 700; font-size: 18px; }
+  .notice { background: var(--warn-soft); color: var(--warn); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; font-size: 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+  .fab { position: fixed; right: 16px; bottom: calc(20px + env(safe-area-inset-bottom)); z-index: 6; border-radius: 999px; padding: 14px 20px;
+    background: var(--accent); color: #fff; border: 0; font-size: 16px; font-weight: 600; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+  #toast { position: fixed; left: 16px; right: 16px; bottom: 84px; z-index: 9; text-align: center; pointer-events: none;
+    opacity: 0; transition: opacity .2s; }
+  #toast span { display: inline-block; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 15px; }
+  #toast.err span { background: var(--err); }
+  #toast.show { opacity: 1; }
+  .q { background: #fff; border: 1px solid var(--line); border-left: 6px solid transparent; border-radius: 12px;
+    padding: 14px 14px 6px; margin-top: 12px; }
+  .q.on { border-left-color: var(--accent); }
+  .q .top { display: flex; gap: 8px; align-items: stretch; flex-wrap: wrap; }
+  .q .tit { flex: 1 1 200px; border: 0; border-bottom: 1px solid #b9aa9b; border-radius: 0; background: #f6f3ef; padding: 14px 12px; }
+  .q .tit:focus { outline: none; border-bottom: 2px solid var(--accent); }
+  .q select { flex: 0 1 190px; }
+  .opt { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+  .opt .m { width: 20px; height: 20px; border: 2px solid #b9aa9b; border-radius: 50%; flex: none; }
+  .opt .m.sq { border-radius: 4px; }
+  .opt .m.num { border: 0; width: 20px; height: auto; text-align: center; color: var(--muted); font-size: 14px; }
+  .opt input { border: 0; border-radius: 0; padding: 8px 0; background: transparent; }
+  .opt input:focus { outline: none; border-bottom: 2px solid var(--accent); }
+  .opt .x { background: none; border: 0; font-size: 22px; color: var(--muted); padding: 4px 8px; }
+  .opt .add { background: none; border: 0; color: var(--muted); font-size: 15px; padding: 8px 0; }
+  .opt .altro { background: none; border: 0; color: #1a73e8; font-size: 15px; padding: 8px 0; }
+  .finta { color: var(--muted); border-bottom: 1px dotted #b9aa9b; padding: 10px 0; margin: 8px 0; width: 60%; font-size: 14px; }
+  .qfoot { display: flex; justify-content: flex-end; align-items: center; gap: 4px; border-top: 1px solid var(--line); margin-top: 10px; padding-top: 6px; }
+  .ico { background: none; border: 0; padding: 10px; color: #5f6368; line-height: 0; }
+  .sep { width: 1px; height: 28px; background: var(--line); margin: 0 8px; }
+  .tog { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0; color: var(--ink); }
+  .tog input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .tog i { width: 36px; height: 14px; border-radius: 7px; background: #bdc1c6; position: relative; }
+  .tog i::after { content: ''; position: absolute; top: -3px; left: -2px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); transition: left .15s; }
+  .tog input:checked + i { background: var(--accent-soft); }
+  .tog input:checked + i::after { left: 18px; background: var(--accent); }
+  .addq { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 12px; padding: 13px;
+    border: 1px dashed #b9aa9b; border-radius: 12px; background: transparent; color: var(--accent); font-size: 16px; font-weight: 600; }
+  textarea { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; min-height: 70px; }
+  .switch { display: flex; gap: 10px; align-items: center; font-size: 15px; margin-top: 12px; }
+  .switch input { width: 22px; height: 22px; }
+  .sez { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin: 18px 0 8px; }
+  a.btn { display: block; text-align: center; text-decoration: none; box-sizing: border-box; }
+  .bar { margin: 6px 0; font-size: 14px; }
+  .bl { display: flex; justify-content: space-between; gap: 8px; }
+  .bt { height: 8px; border-radius: 4px; background: var(--line); margin-top: 3px; overflow: hidden; }
+  .bt i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+  .media { font-size: 30px; font-weight: 700; color: var(--accent); }
+  .media small { font-size: 15px; color: var(--muted); font-weight: 400; }
+  .citaz { background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 6px; font-size: 14px; }
+  .tabs button { font-size: 14px; }
+  .login { max-width: 360px; margin: 40px auto 0; text-align: center; }
+  .login img { width: 96px; height: 96px; border-radius: 22px; }
+  .login h2 { margin: 16px 0 6px; }
+  .login input { text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-top: 18px; }
+  .spin { text-align: center; padding: 40px 0; color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <button id="back" hidden>‹ Eventi</button>
+  <h1 id="title">Conti eventi</h1>
+  <button id="reload" aria-label="Aggiorna">↻</button>
+</header>
+<main id="main"><div class="spin">Caricamento…</div></main>
+<button class="fab" id="fab" hidden></button>
+<div id="toast"><span></span></div>
+
+<script>
+const S = { view: 'eventi', eventi: [], ev: null, tab: 'iscritti', filtro: 'da', cerca: '', aperta: null, conferma: null, turno: 0 };
+const $ = s => document.querySelector(s);
+const main = $('#main');
+
+// Ogni azione è una chiamata allo script Google (doPost), con il codice di accesso personale.
+async function call(fn, ...args) {
+  let r;
+  try {
+    const res = await fetch(window.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },  // niente preflight CORS
+      body: JSON.stringify({ codice: memo('codice'), fn, args })
+    });
+    r = await res.json();
+  } catch (e) {
+    throw new Error(navigator.onLine === false ? 'Sei offline: riprova quando c\'è connessione.' : 'Non riesco a contattare Google: riprova.');
+  }
+  if (!r.ok && r.error === 'CODICE_NON_VALIDO') { memo('codice', ''); apriLogin('Codice non valido o revocato.'); throw new Error('Codice non valido'); }
+  if (!r.ok) throw new Error(r.error);
+  return r.result;
+}
+function euro(n) {
+  return (Number(n) || 0).toLocaleString('it-IT', { style: 'currency', currency: 'EUR' });
+}
+function dataIt(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || '');
+  return m ? m[3] + '/' + m[2] + '/' + m[1] : (s || '');
+}
+function oggi() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+let toastT;
+function toast(msg, err) {
+  const t = $('#toast');
+  t.querySelector('span').textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = '', err ? 4500 : 2000);
+}
+function errMsg(e) { return (e && e.message ? e.message : String(e)).replace(/^Error:\s*/, ''); }
+function memo(k, v) {
+  try { if (v === undefined) return localStorage.getItem(k) || ''; localStorage.setItem(k, v); } catch (e) { return ''; }
+}
+
+// ---------- Eventi ----------
+async function apriEventi() {
+  S.view = 'eventi'; S.ev = null;
+  $('#back').hidden = true; $('#title').textContent = 'Conti eventi';
+  $('#fab').hidden = false; $('#fab').textContent = '+ Nuovo evento';
+  main.innerHTML = '<div class="spin">Caricamento…</div>';
+  const turno = ++S.turno;
+  try { S.eventi = await call('getEventi'); } catch (e) { return turno === S.turno && errore(e); }
+  if (turno === S.turno) disegnaEventi();
+}
+function disegnaEventi() {
+  if (!S.eventi.length) {
+    main.innerHTML = '<div class="empty">Nessun evento ancora.<br>Tocca “+ Nuovo evento”.</div>';
+    return;
+  }
+  // più recenti in alto: per data evento, poi ordine di inserimento
+  const ord = S.eventi.map((e, i) => [e, i]).sort((a, b) => (b[0].data || '').localeCompare(a[0].data || '') || b[1] - a[1]).map(x => x[0]);
+  const attivi = ord.filter(e => !e.archiviato), archiviati = ord.filter(e => e.archiviato);
+  const tot = S.eventi.reduce((a, e) => (a.e += e.entrate || 0, a.u += e.uscite || 0, a), { e: 0, u: 0 });
+  main.innerHTML =
+    `<div class="card"><div class="muted">Totale di tutti gli eventi</div>
+      <div class="nums"><div>Entrate<b>${euro(tot.e)}</b></div><div>Uscite<b>${euro(tot.u)}</b></div>
+      <div>Saldo<b class="${tot.e - tot.u < 0 ? 'neg' : ''}">${euro(tot.e - tot.u)}</b></div></div></div>` +
+    `<button class="btn ghost" id="fb-tutti" style="margin:0 0 10px">★ Feedback di tutti gli eventi</button>` +
+    attivi.map(cardEvento).join('') +
+    (archiviati.length ? `<button class="btn ghost" id="archivio">${S.archivio ? 'Nascondi' : 'Mostra'} archivio (${archiviati.length})</button>` +
+      (S.archivio ? '<div class="sez">Archivio</div>' + archiviati.map(cardEvento).join('') : '') : '') +
+    `<button class="link" id="esci" style="display:block;margin:28px auto 0;color:var(--muted)">Esci${memo('chi') ? ' (' + esc(memo('chi')) + ')' : ''}</button>`;
+}
+function cardEvento(e) {
+  return e.errore
+    ? `<div class="card"><h2>${esc(e.nome)}</h2><div class="muted">${esc(e.errore)}</div></div>`
+    : `<button class="card ev" data-ev="${esc(e.nome)}">
+        <h2>${esc(e.titolo)}</h2>
+        <div class="muted">${e.data ? dataIt(e.data) + ' · ' : ''}${e.pagati} pagati · ${e.inAttesa} da pagare</div>
+        <div class="nums"><div>Entrate<b>${euro(e.entrate)}</b></div><div>Uscite<b>${euro(e.uscite)}</b></div>
+        <div>Saldo<b class="${e.saldo < 0 ? 'neg' : ''}">${euro(e.saldo)}</b></div></div>
+      </button>`;
+}
+
+// ---------- Evento ----------
+async function apriEvento(nome, silenzioso) {
+  S.view = 'evento';
+  $('#back').hidden = false; $('#fab').hidden = true;
+  if (!silenzioso) { $('#title').textContent = nome; main.innerHTML = '<div class="spin">Caricamento…</div>'; }
+  const turno = ++S.turno;
+  let ev;
+  try { ev = await call('getEvento', nome); } catch (e) { return turno === S.turno && errore(e); }
+  if (turno !== S.turno) return;
+  S.ev = ev;
+  $('#title').textContent = S.ev.titolo;
+  disegnaEvento();
+}
+function conti(ev) {
+  let pieno = 0, offerta = 0, entrate = 0, attesa = 0;
+  ev.iscritti.forEach(p => {
+    if (!p.pagato) { attesa++; return; }
+    if (p.offerta > 0) { offerta++; entrate += p.offerta; } else { pieno++; entrate += ev.prezzo; }
+  });
+  const cat = {};
+  ev.categorie.forEach(c => cat[c] = 0);
+  let uscite = 0;
+  ev.uscite.forEach(u => { uscite += u.importo; cat[u.categoria] = (cat[u.categoria] || 0) + u.importo; });
+  return { pieno, offerta, entrate, attesa, uscite, cat, saldo: entrate - uscite };
+}
+function disegnaEvento() {
+  const ev = S.ev, k = conti(ev);
+  const tabs = [['iscritti', 'Iscritti'], ['uscite', 'Uscite'], ['conti', 'Conti'], ['feedback', 'Feedback']]
+    .map(([id, t]) => `<button data-tab="${id}" class="${S.tab === id ? 'on' : ''}">${t}</button>`).join('');
+  let html = (ev.avviso ? `<div class="notice">${esc(ev.avviso)}</div>` : '') + `<div class="tabs">${tabs}</div>`;
+  if (S.tab === 'iscritti') html += vistaIscritti(ev, k);
+  if (S.tab === 'uscite') html += vistaUscite(ev, k);
+  if (S.tab === 'conti') html += vistaConti(ev, k);
+  if (S.tab === 'feedback') { html += '<div id="fb"><div class="spin">Caricamento…</div></div>'; caricaFeedback(ev.nome); }
+  main.innerHTML = html;
+  const c = $('#cerca');
+  if (c && S.focusCerca) { c.focus(); c.setSelectionRange(c.value.length, c.value.length); }
+}
+function vistaIscritti(ev, k) {
+  const q = S.cerca.trim().toLowerCase();
+  const lista = ev.iscritti.filter(p =>
+    (S.filtro === 'tutti' || (S.filtro === 'da' ? !p.pagato : p.pagato)) &&
+    (!q || (p.nome + ' ' + p.causale + ' ' + p.codice).toLowerCase().includes(q)));
+  const pagati = ev.iscritti.length - k.attesa;
+  const chips = [['da', 'Da pagare ' + k.attesa], ['si', 'Pagati ' + pagati], ['tutti', 'Tutti ' + ev.iscritti.length]]
+    .map(([id, t]) => `<button data-filtro="${id}" class="${S.filtro === id ? 'on' : ''}">${t}</button>`).join('');
+  return `<input id="cerca" type="search" placeholder="Cerca nome o causale" value="${esc(S.cerca)}" autocomplete="off">
+    <div class="chips">${chips}</div>` +
+    (lista.length ? lista.map(p => {
+      const conf = S.conferma === p.riga;
+      const btn = p.pagato ? 'si' : (conf ? 'conf' : '');
+      const testo = p.pagato ? '✓ Pagato' : (conf ? 'Confermi?' : 'Segna pagato');
+      const prezzo = p.offerta > 0 ? `<span class="pill">Offerta ${euro(p.offerta)}</span>` : `<span class="muted">${euro(ev.prezzo)}</span>`;
+      const stato = p.inAttesaInvito ? 'Invito in partenza' : p.stato;
+      return `<div class="card">
+        <div class="person"><button class="who apri" data-persona="${p.riga}"><b>${esc(p.nome)} <span class="chev">${S.persona === p.riga ? '▴' : '▾'}</span></b>
+            <span>${esc(p.causale) || 'Tocca per vedere le risposte'}</span></button>
+          <button class="pay ${btn}" data-pay="${p.riga}">${testo}</button></div>
+        <div class="row2">${prezzo}<span class="muted" style="flex:1">${esc(stato)}</span>
+          <button class="link" data-apri="${p.riga}">${S.aperta === p.riga ? 'Chiudi' : 'Offerta'}</button></div>
+        ${S.persona === p.riga ? `<div class="risp">${p.risposte.length ? p.risposte.map(([q, a]) =>
+          `<div><div class="muted">${esc(q)}</div><div>${esc(a)}</div></div>`).join('') : '<div class="muted">Nessuna risposta.</div>'}
+          ${ev.automatico ? `<button class="btn small ghost" data-reinvia="${p.riga}">Reinvia mail di pagamento</button>` : ''}</div>` : ''}
+        ${S.aperta === p.riga ? `<div class="off"><input id="off-${p.riga}" type="text" inputmode="decimal"
+             placeholder="Prezzo pagato, es. 12" value="${p.offerta > 0 ? p.offerta : ''}">
+           <button class="btn small" data-off="${p.riga}">Salva</button>
+           ${p.offerta > 0 ? `<button class="btn small ghost" data-nooff="${p.riga}">Pieno</button>` : ''}</div>` : ''}
+      </div>`;
+    }).join('') : '<div class="empty">Nessuno qui.</div>');
+}
+function vistaUscite(ev, k) {
+  const opts = ev.categorie.map(c => `<option>${esc(c)}</option>`).join('');
+  return `<div class="card">
+      <label>Data</label><input id="u-data" type="date" value="${oggi()}">
+      <label>Categoria</label><select id="u-cat">${opts}</select>
+      <label>Importo (€)</label><input id="u-imp" type="text" inputmode="decimal" placeholder="0,00">
+      <label>Chi ha pagato</label><input id="u-chi" type="text" value="${esc(memo('chi'))}" placeholder="Nome">
+      <button class="btn" id="u-add">Aggiungi uscita</button>
+    </div>` +
+    (ev.uscite.length ? ev.uscite.slice().reverse().map(u => `<div class="card">
+        <div class="person"><div class="who"><b>${esc(u.categoria || 'Senza categoria')} · ${euro(u.importo)}</b>
+          <span>${dataIt(u.data)}${u.chi ? ' · pagato da ' + esc(u.chi) : ''}</span></div>
+          <button class="link" data-del="${u.riga}" data-imp="${u.importo}">Elimina</button></div></div>`).join('')
+      : '<div class="empty">Nessuna uscita inserita.</div>') +
+    `<div class="muted" style="text-align:center">Totale uscite ${euro(k.uscite)}</div>`;
+}
+function vistaConti(ev, k) {
+  const r = (t, v, cls) => `<div class="tot ${cls || ''}"><span>${t}</span><span>${v}</span></div>`;
+  const quando = [ev.data ? dataIt(ev.data) : '', ev.ore || '', ev.luogo || ''].filter(Boolean).join(' · ');
+  return (quando ? `<div class="muted" style="margin-bottom:10px">${esc(quando)}</div>` : '') + `<div class="card">
+      ${r('Prezzo pieno', euro(ev.prezzo))}
+      ${r('Pagati a prezzo pieno', k.pieno)}${r('Pagati con offerta', k.offerta)}${r('Da pagare', k.attesa)}
+      ${r('Entrate', euro(k.entrate), 'big')}</div>
+    <div class="card">${ev.categorie.map(c => r(c, euro(k.cat[c] || 0))).join('')}${r('Uscite', euro(k.uscite), 'big')}</div>
+    <div class="card">${r('Saldo', `<span class="${k.saldo < 0 ? 'neg' : ''}">${euro(k.saldo)}</span>`, 'big')}</div>
+    <div class="sez">Iscrizioni</div>
+    ${ev.linkIscrizione ? `<div class="card"><div class="muted">Link del modulo da mandare agli iscritti</div>
+        <div style="word-break:break-all;margin:6px 0">${esc(ev.linkIscrizione)}</div>
+        <button class="btn small" id="condividi">Condividi link</button>
+        ${ev.linkModifica ? `<a class="btn ghost" href="${esc(ev.linkModifica)}" target="_blank">Modifica le domande del modulo</a>` : ''}
+      </div>` : ''}
+    ${ev.automatico ? `<button class="btn ghost" id="prove">Mandami le mail di prova</button>
+      <p class="muted">Ti arrivano la mail di pagamento, l'invito e la richiesta di feedback di questo evento.</p>` : ''}
+    <button class="btn ghost" id="archivia">${ev.archiviato ? 'Riattiva evento' : 'Archivia evento'}</button>
+    <p class="muted">${ev.archiviato ? 'L\'evento è in archivio' + (ev.linkIscrizione ? ' e il modulo non accetta iscrizioni.' : '.')
+      : 'Archiviando, l\'evento passa nello storico' + (ev.linkIscrizione ? ' e il modulo smette di accettare iscrizioni.' : '.')}</p>
+    <button class="link" id="elimina" style="display:block;margin:18px auto 0;color:var(--err)">Elimina evento</button>`;
+}
+async function condividi() {
+  const url = S.ev.linkIscrizione;
+  try {
+    if (navigator.share) return await navigator.share({ title: S.ev.titolo, url });
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { await navigator.clipboard.writeText(url); toast('Link copiato'); }
+  catch (e) { prompt('Copia il link:', url); }
+}
+async function archivia() {
+  const a = !S.ev.archiviato;
+  if (a && !confirm('Archiviare "' + S.ev.titolo + '"?')) return;
+  try { await call('setArchiviato', S.ev.nome, a); toast(a ? 'Evento archiviato' : 'Evento riattivato'); await apriEvento(S.ev.nome, true); }
+  catch (e) { toast(errMsg(e), true); }
+}
+
+async function elimina() {
+  const ev = S.ev;
+  const cosa = ev.linkIscrizione
+    ? 'la sua scheda nei conti (con le uscite), il modulo e il foglio risposte (vanno nel Cestino di Drive per 30 giorni)'
+    : 'la sua scheda nei conti (con le uscite)';
+  const r = prompt('Elimini "' + ev.titolo + '": ' + cosa + '.\nPer confermare scrivi il nome dell\'evento:');
+  if (r === null) return;
+  if (r.trim() !== ev.nome) return toast('Il nome non corrisponde: non ho eliminato nulla', true);
+  try { await call('eliminaEvento', ev.nome, ev.nome); toast('Evento eliminato'); apriEventi(); }
+  catch (e) { toast(errMsg(e), true); }
+}
+
+// ---------- Feedback ----------
+async function caricaFeedback(nome) {
+  const turno = S.turno;
+  let f;
+  try { f = await call('getFeedback', nome || ''); } catch (e) { const el = $('#fb'); if (el) el.innerHTML = `<div class="notice">${esc(errMsg(e))}</div>`; return; }
+  const el = $('#fb');
+  if (!el || turno !== S.turno) return;
+  el.innerHTML = vistaFeedback(f, !nome);
+}
+function barra(label, n, tot) {
+  const pc = tot ? Math.round(n * 100 / tot) : 0;
+  return `<div class="bar"><div class="bl"><span>${esc(label)}</span><span class="muted">${n} · ${pc}%</span></div>
+    <div class="bt"><i style="width:${pc}%"></i></div></div>`;
+}
+function voto(m) { return m == null ? '–' : m.toLocaleString('it-IT', { maximumFractionDigits: 1 }); }
+function vistaFeedback(f, tutti) {
+  if (!f.attivo) return '<div class="empty">Il modulo di feedback non c\'è ancora.<br>Esegui “installaAutomazioni” dall\'editor Apps Script.</div>';
+  let html = `<div class="card"><div class="nums" style="margin-top:0"><div>Risposte<b>${f.n}</b></div>` +
+    (f.domande[0] && f.domande[0].tipo === 'scala' ? `<div>Esperienza<b>${voto(f.domande[0].media)} / ${f.domande[0].max}</b></div>` : '') +
+    `</div></div>`;
+  if (tutti && f.eventi.length) {
+    html += '<div class="sez">Per evento</div><div class="card">' + f.eventi.sort((a, b) => b.n - a.n).map(e =>
+      `<div class="tot"><span>${esc(e.evento)}</span><span>${e.n} risp. · ${voto(e.media)}★</span></div>`).join('') + '</div>';
+  }
+  if (!f.n) return html + '<div class="empty">Ancora nessuna risposta.</div>';
+  html += f.domande.map(d => {
+    let corpo = '';
+    if (d.tipo === 'scala') {
+      corpo = `<div class="media">${voto(d.media)}<small> / ${d.max}</small></div>
+        <div class="muted" style="margin-bottom:6px">${esc(d.etichette[0] || '')} ← → ${esc(d.etichette[1] || '')}</div>` +
+        d.conteggi.slice().reverse().map(([l, c]) => barra(l, c, d.n)).join('');
+    } else if (d.tipo === 'testo') {
+      corpo = d.altri.map(t => `<div class="citaz">${esc(t)}</div>`).join('') || '<div class="muted">Nessuna risposta.</div>';
+    } else {
+      corpo = d.conteggi.map(([l, c]) => barra(l, c, d.tipo === 'caselle' ? f.n : d.n)).join('') +
+        (d.altri.length ? `<div class="muted" style="margin-top:8px">Altro:</div>` + d.altri.map(t => `<div class="citaz">${esc(t)}</div>`).join('') : '');
+    }
+    return `<div class="card"><b>${esc(d.titolo)}</b><div style="margin-top:8px">${corpo}</div></div>`;
+  }).join('');
+  return html;
+}
+function apriFeedbackTutti() {
+  S.view = 'feedback'; S.turno++;
+  $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = 'Feedback';
+  main.innerHTML = '<div id="fb"><div class="spin">Caricamento…</div></div>';
+  caricaFeedback('');
+}
+async function reinvia(riga) {
+  const p = S.ev.iscritti.find(x => x.riga === riga);
+  if (!confirm('Rimandare a ' + p.nome + ' la mail con le istruzioni di pagamento?')) return;
+  try { const r = await call('reinviaIstruzioni', S.ev.nome, riga, p.codice || p.causale); toast('Mail inviata a ' + r.email); }
+  catch (e) { toast(errMsg(e), true); }
+}
+async function prove() {
+  $('#prove').disabled = true;
+  try { const r = await call('inviaProve', S.ev.nome); toast('Mail di prova inviate a ' + r.email); }
+  catch (e) { toast(errMsg(e), true); }
+  const b = $('#prove'); if (b) b.disabled = false;
+}
+
+// ---------- Azioni ----------
+let confT;
+async function tocca(riga) {
+  const p = S.ev.iscritti.find(x => x.riga === riga);
+  if (!p) return;
+  if (!p.pagato && S.conferma !== riga) {
+    S.conferma = riga; disegnaEvento();
+    clearTimeout(confT);
+    confT = setTimeout(() => { if (S.conferma === riga) { S.conferma = null; disegnaEvento(); } }, 3500);
+    return;
+  }
+  if (p.pagato && !confirm('Togliere la spunta Pagato a ' + p.nome + '?')) return;
+  S.conferma = null;
+  const nuovo = !p.pagato, prima = p.inAttesaInvito;
+  p.pagato = nuovo; p.inAttesaInvito = nuovo && !/confermato/i.test(p.stato);
+  disegnaEvento();
+  try {
+    const r = await call('setPagato', S.ev.nome, riga, p.codice || p.causale, nuovo);
+    if (r && r.stato !== undefined) { p.stato = r.stato; p.inAttesaInvito = false; disegnaEvento(); }
+    if (r && r.avviso) toast(r.avviso, true);
+    else toast(nuovo ? p.nome + ': pagato' + (S.ev.automatico && /confermato/i.test(p.stato) ? ', invito inviato' : '') : p.nome + ': spunta tolta');
+  } catch (e) {
+    p.pagato = !nuovo; p.inAttesaInvito = prima; disegnaEvento(); toast(errMsg(e), true);
+  }
+}
+async function salvaOfferta(riga, valore) {
+  const p = S.ev.iscritti.find(x => x.riga === riga);
+  const v = valore === '' ? '' : Number(String(valore).replace(',', '.'));
+  if (v !== '' && !(v > 0)) return toast('Scrivi il prezzo pagato, es. 12', true);
+  const prima = p.offerta;
+  p.offerta = v === '' ? null : v; S.aperta = null; disegnaEvento();
+  try {
+    await call('setOfferta', S.ev.nome, riga, p.codice || p.causale, v);
+    toast(v === '' ? 'Prezzo pieno' : 'Offerta ' + euro(v));
+  } catch (e) { p.offerta = prima; disegnaEvento(); toast(errMsg(e), true); }
+}
+async function aggiungiUscita() {
+  const u = { data: $('#u-data').value, categoria: $('#u-cat').value,
+    importo: Number(String($('#u-imp').value).replace(',', '.')), chi: $('#u-chi').value.trim() };
+  if (!(u.importo > 0)) return toast('Scrivi l\'importo', true);
+  memo('chi', u.chi);
+  $('#u-add').disabled = true; $('#u-add').textContent = 'Salvataggio…';
+  try {
+    await call('addUscita', S.ev.nome, u);
+    toast('Uscita aggiunta');
+    await apriEvento(S.ev.nome, true);
+  } catch (e) { toast(errMsg(e), true); $('#u-add').disabled = false; $('#u-add').textContent = 'Aggiungi uscita'; }
+}
+async function eliminaUscita(riga, imp) {
+  if (!confirm('Eliminare questa uscita di ' + euro(imp) + '?')) return;
+  try { await call('deleteUscita', S.ev.nome, riga, imp); toast('Uscita eliminata'); await apriEvento(S.ev.nome, true); }
+  catch (e) { toast(errMsg(e), true); }
+}
+
+// ---------- Nuovo evento ----------
+const TIPI = [['scelta', '◉  Scelta multipla'], ['caselle', '☑  Caselle di controllo'], ['menu', '▾  Elenco a discesa'],
+  ['testo', '═  Risposta breve'], ['paragrafo', '≡  Paragrafo']];
+const CON_OPZIONI = ['scelta', 'caselle', 'menu'];
+const ICO_COPIA = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>';
+const ICO_CESTINO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M15 4V3H9v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5zm2 15H7V6h10v13zM9 8h2v9H9zm4 0h2v9h-2z"/></svg>';
+function nuovaDomanda() { return { titolo: '', tipo: 'scelta', opzioni: [''], altro: false, obbligatoria: false }; }
+function apriNuovo() {
+  S.view = 'nuovo'; S.turno++;
+  S.nuovo = { creaForm: true, domande: [], attiva: -1 };
+  $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = 'Nuovo evento';
+  main.innerHTML = `<div class="card">
+    <label>Nome evento</label><input id="n-nome" type="text" placeholder="es. Ufficio Time novembre">
+    <label>Data</label><input id="n-data" type="date">
+    <div style="display:flex;gap:8px"><div style="flex:1"><label>Dalle</label><input id="n-ora1" type="time"></div>
+      <div style="flex:1"><label>Alle</label><input id="n-ora2" type="time"></div></div>
+    <label>Luogo</label><input id="n-luogo" type="text" placeholder="es. S2E Via Palmanova 67">
+    <label>Prezzo a persona (€)</label><input id="n-prezzo" type="text" inputmode="decimal" placeholder="15">
+  </div>
+  <div id="n-parte"></div>
+  <button class="btn" id="n-crea">Crea evento</button>`;
+  disegnaParteNuovo();
+}
+function disegnaParteNuovo(focus) {
+  const n = S.nuovo;
+  $('#n-parte').innerHTML = n.creaForm
+    ? `<div class="sez">Modulo di iscrizione</div>
+      <div class="card">
+        <label>Descrizione (facoltativa)</label><textarea id="n-desc" placeholder="Cosa si fa, cosa portare…">${esc(n.descrizione || '')}</textarea>
+        <div class="muted" style="margin-top:8px">Nome, Cognome ed email ci sono già.</div>
+      </div>
+      ${n.domande.map(vistaDomanda).join('')}
+      <button class="addq" id="q-add">⊕ Aggiungi domanda</button>
+      <button class="link" id="n-gia" style="display:block;margin:14px auto 0">Hai già un modulo? Collegalo</button>`
+    : `<div class="card">
+        <label>Link del foglio risposte del modulo</label><input id="n-link" type="url" placeholder="https://docs.google.com/spreadsheets/…" value="${esc(n.link || '')}">
+        <label>Nome della scheda risposte</label><input id="n-tab" type="text" value="${esc(n.tab || 'Risposte del modulo 1')}">
+      </div>
+      <button class="link" id="n-gia" style="display:block;margin:6px auto 0">Crea invece un modulo nuovo</button>`;
+  if (focus) { const el = $(focus); if (el) { el.focus(); if (el.select) el.select(); } }
+}
+function vistaDomanda(d, i) {
+  const segno = j => d.tipo === 'scelta' ? '<span class="m"></span>' : d.tipo === 'caselle' ? '<span class="m sq"></span>' : `<span class="m num">${j + 1}.</span>`;
+  let corpo = '';
+  if (CON_OPZIONI.includes(d.tipo)) {
+    corpo = d.opzioni.map((o, j) => `<div class="opt">${segno(j)}
+        <input id="o-${i}-${j}" data-q="${i}" data-o="${j}" type="text" value="${esc(o)}" placeholder="Opzione ${j + 1}">
+        ${d.opzioni.length > 1 ? `<button class="x" data-q="${i}" data-odel="${j}" aria-label="Togli opzione">×</button>` : ''}</div>`).join('') +
+      (d.altro ? `<div class="opt">${segno(d.opzioni.length)}<span class="muted" style="flex:1">Altro…</span>
+        <button class="x" data-q="${i}" data-noaltro="1" aria-label="Togli Altro">×</button></div>` : '') +
+      `<div class="opt">${segno(d.opzioni.length + (d.altro ? 1 : 0))}<button class="add" data-q="${i}" data-oadd="1">Aggiungi opzione</button>
+        ${d.tipo !== 'menu' && !d.altro ? `<span class="muted">o</span><button class="altro" data-q="${i}" data-altro="1">aggiungi "Altro"</button>` : ''}</div>`;
+  } else {
+    corpo = `<div class="finta">${d.tipo === 'testo' ? 'Testo risposta breve' : 'Testo risposta lunga'}</div>`;
+  }
+  return `<div class="q ${n_attiva() === i ? 'on' : ''}" data-qbox="${i}">
+    <div class="top">
+      <input class="tit" id="t-${i}" data-q="${i}" data-k="titolo" type="text" placeholder="Domanda" value="${esc(d.titolo)}">
+      <select data-q="${i}" data-k="tipo">${TIPI.map(([v, t]) => `<option value="${v}" ${d.tipo === v ? 'selected' : ''}>${t}</option>`).join('')}</select>
+    </div>
+    <div style="margin-top:8px">${corpo}</div>
+    <div class="qfoot">
+      <button class="ico" data-qdup="${i}" aria-label="Duplica">${ICO_COPIA}</button>
+      <button class="ico" data-qdel="${i}" aria-label="Elimina">${ICO_CESTINO}</button>
+      <span class="sep"></span>
+      <label class="tog">Obbligatorio <input type="checkbox" data-q="${i}" data-k="obbligatoria" ${d.obbligatoria ? 'checked' : ''}><i></i></label>
+    </div>
+  </div>`;
+}
+function n_attiva() { return S.nuovo ? S.nuovo.attiva : -1; }
+function azioneDomanda(t, d) {
+  const n = S.nuovo, i = Number(d.q), q = n.domande[i];
+  if (t.id === 'q-add') {
+    n.domande.push(nuovaDomanda()); n.attiva = n.domande.length - 1;
+    disegnaParteNuovo('#t-' + n.attiva); return true;
+  }
+  if (t.id === 'n-gia') { n.creaForm = !n.creaForm; disegnaParteNuovo(); return true; }
+  if (d.qdup !== undefined) {
+    const k = Number(d.qdup), c = JSON.parse(JSON.stringify(n.domande[k]));
+    n.domande.splice(k + 1, 0, c); n.attiva = k + 1; disegnaParteNuovo('#t-' + (k + 1)); return true;
+  }
+  if (d.qdel !== undefined) { n.domande.splice(Number(d.qdel), 1); n.attiva = -1; disegnaParteNuovo(); return true; }
+  if (d.oadd) { q.opzioni.push(''); n.attiva = i; disegnaParteNuovo('#o-' + i + '-' + (q.opzioni.length - 1)); return true; }
+  if (d.odel !== undefined) { q.opzioni.splice(Number(d.odel), 1); disegnaParteNuovo(); return true; }
+  if (d.altro) { q.altro = true; disegnaParteNuovo(); return true; }
+  if (d.noaltro) { q.altro = false; disegnaParteNuovo(); return true; }
+  return false;
+}
+async function inviaNuovoEvento() {
+  const n = S.nuovo;
+  const e = { nome: $('#n-nome').value.trim(), data: $('#n-data').value, oraInizio: $('#n-ora1').value, oraFine: $('#n-ora2').value,
+    luogo: $('#n-luogo').value.trim(), prezzo: Number(String($('#n-prezzo').value).replace(',', '.')), creaForm: n.creaForm };
+  if (!e.nome) return toast('Scrivi il nome dell\'evento', true);
+  if (!(e.prezzo > 0)) return toast('Scrivi il prezzo pieno', true);
+  if (n.creaForm) {
+    if (!e.data || !e.oraInizio) return toast('Scrivi data e ora: servono per l\'invito', true);
+    if (!e.luogo) return toast('Scrivi il luogo: va nell\'invito', true);
+    e.descrizione = n.descrizione || '';
+    e.domande = n.domande.filter(d => d.titolo.trim()).map(d => ({ titolo: d.titolo, tipo: d.tipo, obbligatoria: d.obbligatoria,
+      altro: d.tipo !== 'menu' && CON_OPZIONI.includes(d.tipo) && d.altro,
+      opzioni: CON_OPZIONI.includes(d.tipo) ? d.opzioni.map(x => x.trim()).filter(Boolean) : [] }));
+    const vuota = e.domande.find(d => CON_OPZIONI.includes(d.tipo) && !d.opzioni.length);
+    if (vuota) return toast('Scrivi almeno un\'opzione per "' + vuota.titolo + '"', true);
+  } else {
+    e.link = $('#n-link').value.trim(); e.scheda = $('#n-tab').value.trim();
+  }
+  $('#n-crea').disabled = true; $('#n-crea').textContent = n.creaForm ? 'Creo modulo e fogli…' : 'Creazione…';
+  try {
+    const r = await call('creaEvento', e);
+    toast('Evento creato'); S.tab = n.creaForm ? 'conti' : 'iscritti'; S.filtro = 'da'; S.cerca = '';
+    apriEvento(r.nome);
+  } catch (err) { toast(errMsg(err), true); $('#n-crea').disabled = false; $('#n-crea').textContent = 'Crea evento'; }
+}
+
+function errore(e) {
+  main.innerHTML = `<div class="notice">${esc(errMsg(e))}</div><button class="btn ghost" id="riprova">Riprova</button>`;
+}
+
+// ---------- Eventi UI ----------
+document.addEventListener('click', ev => {
+  const t = ev.target.closest('button');
+  if (!t) return;
+  const d = t.dataset;
+  if (t.id === 'back') return apriEventi();
+  if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'feedback') return apriFeedbackTutti();
+  if (t.id === 'reload' || t.id === 'riprova') return S.view === 'evento' && S.ev ? apriEvento(S.ev.nome) : apriEventi();
+  if (t.id === 'fab') return apriNuovo();
+  if (t.id === 'entra') return entra();
+  if (t.id === 'esci') return esci();
+  if (t.id === 'n-crea') return inviaNuovoEvento();
+  if (t.id === 'u-add') return aggiungiUscita();
+  if (t.id === 'archivio') { S.archivio = !S.archivio; return disegnaEventi(); }
+  if (t.id === 'condividi') return condividi();
+  if (t.id === 'fb-tutti') return apriFeedbackTutti();
+  if (t.id === 'prove') return prove();
+  if (d.reinvia) return reinvia(Number(d.reinvia));
+  if (t.id === 'archivia') return archivia();
+  if (t.id === 'elimina') return elimina();
+  if (S.view === 'nuovo' && azioneDomanda(t, d)) return;
+  if (d.ev) { S.tab = 'iscritti'; S.filtro = 'da'; S.cerca = ''; S.aperta = null; return apriEvento(d.ev); }
+  if (d.tab) { S.tab = d.tab; S.focusCerca = false; return disegnaEvento(); }
+  if (d.filtro) { S.filtro = d.filtro; S.focusCerca = false; return disegnaEvento(); }
+  if (d.pay) return tocca(Number(d.pay));
+  if (d.persona) { S.persona = S.persona === Number(d.persona) ? null : Number(d.persona); S.focusCerca = false; return disegnaEvento(); }
+  if (d.apri) { S.aperta = S.aperta === Number(d.apri) ? null : Number(d.apri); S.focusCerca = false; disegnaEvento();
+    const i = $('#off-' + d.apri); if (i) i.focus(); return; }
+  if (d.off) return salvaOfferta(Number(d.off), $('#off-' + d.off).value.trim());
+  if (d.nooff) return salvaOfferta(Number(d.nooff), '');
+  if (d.del) return eliminaUscita(Number(d.del), Number(d.imp));
+});
+document.addEventListener('input', ev => {
+  const t = ev.target;
+  if (t.id === 'cerca') { S.cerca = t.value; S.focusCerca = true; disegnaEvento(); }
+  if (t.id === 'n-desc') S.nuovo.descrizione = t.value;
+  if (t.id === 'n-link') S.nuovo.link = t.value;
+  if (t.id === 'n-tab') S.nuovo.tab = t.value;
+  if (t.dataset.o !== undefined) S.nuovo.domande[Number(t.dataset.q)].opzioni[Number(t.dataset.o)] = t.value;
+  else if (t.dataset.k === 'titolo') S.nuovo.domande[Number(t.dataset.q)].titolo = t.value;
+});
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (t.dataset.q === undefined || !S.nuovo) return;
+  const q = S.nuovo.domande[Number(t.dataset.q)];
+  if (t.dataset.k === 'obbligatoria') q.obbligatoria = t.checked;
+  if (t.dataset.k === 'tipo') {
+    q.tipo = t.value;
+    if (CON_OPZIONI.includes(q.tipo) && !q.opzioni.length) q.opzioni = [''];
+    disegnaParteNuovo();
+  }
+});
+// Invio su un'opzione = nuova opzione sotto, come su Google Moduli
+document.addEventListener('keydown', ev => {
+  const t = ev.target;
+  if (ev.key !== 'Enter' || t.dataset.o === undefined) return;
+  ev.preventDefault();
+  const i = Number(t.dataset.q), j = Number(t.dataset.o), q = S.nuovo.domande[i];
+  q.opzioni.splice(j + 1, 0, '');
+  disegnaParteNuovo('#o-' + i + '-' + (j + 1));
+});
+// la domanda toccata si evidenzia con la barra a sinistra
+document.addEventListener('focusin', ev => {
+  const box = ev.target.closest && ev.target.closest('[data-qbox]');
+  if (!box || !S.nuovo) return;
+  const i = Number(box.dataset.qbox);
+  if (S.nuovo.attiva === i) return;
+  S.nuovo.attiva = i;
+  document.querySelectorAll('.q').forEach(el => el.classList.toggle('on', Number(el.dataset.qbox) === i));
+});
+
+// ---------- Accesso ----------
+function apriLogin(msg) {
+  S.view = 'login'; S.turno++;
+  $('#back').hidden = true; $('#fab').hidden = true; $('#title').textContent = 'Conti eventi';
+  main.innerHTML = `<div class="login">
+    <img src="icona-192.png" alt="">
+    <h2>Benvenuto</h2>
+    <div class="muted">Scrivi il tuo codice di accesso personale.<br>Te lo dà chi gestisce il file dei conti.</div>
+    ${msg ? `<div class="notice" style="margin-top:14px">${esc(msg)}</div>` : ''}
+    <input id="codice" type="text" autocomplete="off" autocapitalize="characters" placeholder="XXXX-XXXX-XXXX">
+    <button class="btn" id="entra">Entra</button>
+  </div>`;
+}
+async function entra() {
+  const c = $('#codice').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  if (c.length < 10) return toast('Il codice ha 12 caratteri', true);
+  memo('codice', c);
+  $('#entra').disabled = true; $('#entra').textContent = 'Controllo…';
+  try {
+    const r = await call('ping');
+    memo('chi', r.nome);
+    toast('Ciao ' + r.nome + '!');
+    apriEventi();
+  } catch (e) {
+    if (S.view === 'login' && $('#entra')) { $('#entra').disabled = false; $('#entra').textContent = 'Entra'; }
+    if (!/Codice non valido/.test(errMsg(e))) toast(errMsg(e), true);
+  }
+}
+function esci() {
+  if (!confirm('Uscire? Per rientrare servirà di nuovo il codice.')) return;
+  memo('codice', ''); apriLogin();
+}
+document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.id === 'codice') entra(); });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}
+if (!window.API_URL || /INCOLLA/.test(window.API_URL)) {
+  main.innerHTML = '<div class="notice">Manca l\'indirizzo dello script in config.js.</div>';
+} else if (memo('codice')) apriEventi();
+else apriLogin();
+</script>
+</body>
+</html>
