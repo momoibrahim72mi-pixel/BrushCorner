@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conti eventi</title>
+<title>BrushCorner</title>
 <meta name="theme-color" content="#7f2a2a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Conti eventi">
+<meta name="apple-mobile-web-app-title" content="BrushCorner">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -140,7 +140,7 @@
 <body>
 <header>
   <button id="back" hidden>‹ Eventi</button>
-  <h1 id="title">Conti eventi</h1>
+  <h1 id="title">BrushCorner</h1>
   <button id="reload" aria-label="Aggiorna">↻</button>
 </header>
 <main id="main"><div class="spin">Caricamento…</div></main>
@@ -199,7 +199,7 @@ function memo(k, v) {
 // ---------- Eventi ----------
 async function apriEventi() {
   S.view = 'eventi'; S.ev = null;
-  $('#back').hidden = true; $('#title').textContent = 'Conti eventi';
+  $('#back').hidden = true; $('#title').textContent = 'BrushCorner';
   $('#fab').hidden = false; $('#fab').textContent = '+ Nuovo evento';
   main.innerHTML = '<div class="spin">Caricamento…</div>';
   const turno = ++S.turno;
@@ -819,7 +819,7 @@ document.addEventListener('focusin', ev => {
 // ---------- Accesso ----------
 function apriLogin(msg) {
   S.view = 'login'; S.turno++;
-  $('#back').hidden = true; $('#fab').hidden = true; $('#title').textContent = 'Conti eventi';
+  $('#back').hidden = true; $('#fab').hidden = true; $('#title').textContent = 'BrushCorner';
   main.innerHTML = `<div class="login">
     <img src="icona-192.png" alt="">
     <h2>Benvenuto</h2>
