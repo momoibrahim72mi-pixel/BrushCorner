@@ -1,6 +1,6 @@
 // Tiene l'app sul telefono: si apre subito anche con rete lenta.
 // I dati arrivano sempre dallo script Google, non vengono salvati qui.
-const CACHE = 'conti-eventi-v2';
+const CACHE = 'conti-eventi-v4';
 const FILE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icona-192.png', 'icona-512.png', 'icona-maskable.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

@@ -128,6 +128,13 @@
   .login h2 { margin: 16px 0 6px; }
   .login input { text-align: center; letter-spacing: 2px; text-transform: uppercase; margin-top: 18px; }
   .spin { text-align: center; padding: 40px 0; color: var(--muted); }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.no { background: var(--warn-soft); color: var(--warn); }
+  .foto { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; display: block; margin-top: 8px; background: var(--line); }
+  .riga { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .aiuto { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .colori { display: flex; gap: 10px; align-items: center; }
+  .colori input { width: 56px; height: 40px; padding: 2px; flex: none; }
 </style>
 </head>
 <body>
@@ -198,6 +205,11 @@ async function apriEventi() {
   const turno = ++S.turno;
   try { S.eventi = await call('getEventi'); } catch (e) { return turno === S.turno && errore(e); }
   if (turno === S.turno) disegnaEventi();
+  // le mail prendono le icone social da qui: lo script impara l'indirizzo dell'app da solo
+  const base = location.origin + location.pathname.replace(/[^/]*$/, '');
+  if (/^https:/.test(base) && memo('indirizzo') !== base) {
+    call('impostaIndirizzoApp', base).then(r => { if (r && r.ok) memo('indirizzo', base); }).catch(() => {});
+  }
 }
 function disegnaEventi() {
   if (!S.eventi.length) {
@@ -212,7 +224,8 @@ function disegnaEventi() {
     `<div class="card"><div class="muted">Totale di tutti gli eventi</div>
       <div class="nums"><div>Entrate<b>${euro(tot.e)}</b></div><div>Uscite<b>${euro(tot.u)}</b></div>
       <div>Saldo<b class="${tot.e - tot.u < 0 ? 'neg' : ''}">${euro(tot.e - tot.u)}</b></div></div></div>` +
-    `<button class="btn ghost" id="fb-tutti" style="margin:0 0 10px">★ Feedback di tutti gli eventi</button>` +
+    `<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn ghost" id="fb-tutti" style="margin:0">★ Feedback</button>
+      <button class="btn ghost" id="impost" style="margin:0">⚙ Aspetto e testi</button></div>` +
     attivi.map(cardEvento).join('') +
     (archiviati.length ? `<button class="btn ghost" id="archivio">${S.archivio ? 'Nascondi' : 'Mostra'} archivio (${archiviati.length})</button>` +
       (S.archivio ? '<div class="sez">Archivio</div>' + archiviati.map(cardEvento).join('') : '') : '') +
@@ -222,7 +235,7 @@ function cardEvento(e) {
   return e.errore
     ? `<div class="card"><h2>${esc(e.nome)}</h2><div class="muted">${esc(e.errore)}</div></div>`
     : `<button class="card ev" data-ev="${esc(e.nome)}">
-        <h2>${esc(e.titolo)}</h2>
+        <h2>${esc(e.titolo)}${e.esaurito ? ' <span class="pill no">Esaurito</span>' : ''}</h2>
         <div class="muted">${e.data ? dataIt(e.data) + ' · ' : ''}${e.pagati} pagati · ${e.inAttesa} da pagare</div>
         <div class="nums"><div>Entrate<b>${euro(e.entrate)}</b></div><div>Uscite<b>${euro(e.uscite)}</b></div>
         <div>Saldo<b class="${e.saldo < 0 ? 'neg' : ''}">${euro(e.saldo)}</b></div></div>
@@ -330,6 +343,20 @@ function vistaConti(ev, k) {
         <button class="btn small" id="condividi">Condividi link</button>
         ${ev.linkModifica ? `<a class="btn ghost" href="${esc(ev.linkModifica)}" target="_blank">Modifica le domande del modulo</a>` : ''}
       </div>` : ''}
+    ${ev.creatoDaApp ? `<div class="sez">Immagine</div>
+      <div class="card">${ev.immagine ? `<img class="foto" src="${esc(ev.immagine)}" alt="" style="margin-top:0" onerror="this.style.display='none'">`
+          : '<div class="muted">Nessuna immagine: modulo e mail escono solo con il titolo.</div>'}
+        <div class="riga"><button class="btn small ghost" id="img-scegli">${ev.immagine ? 'Cambia immagine' : 'Aggiungi immagine'}</button>
+          ${ev.immagine ? '<button class="btn small ghost" id="img-togli">Togli</button>' : ''}</div>
+        <input type="file" accept="image/*" id="img-file" hidden>
+        <div class="aiuto">Va in cima al modulo di iscrizione e alle mail.</div></div>
+      <div class="sez">Posti</div>
+      <div class="card"><div class="muted">${ev.iscritti.length} iscritti${ev.posti ? ' su ' + ev.posti + ' posti' : ', nessun limite'}${ev.esaurito ? ' · modulo chiuso: posti esauriti' : ''}</div>
+        <div class="off"><input id="posti" type="text" inputmode="numeric" placeholder="Posti massimi (vuoto = nessun limite)" value="${ev.posti || ''}">
+          <button class="btn small" id="posti-salva">Salva</button></div>
+        <div class="aiuto">Arrivati a quel numero di iscritti il modulo si chiude da solo. Se togli qualcuno dal foglio, si riapre.</div></div>
+      <button class="btn ghost" id="duplica">Duplica evento</button>
+      <p class="muted">Crea un evento nuovo con le stesse domande, prezzo, luogo e immagine: cambi solo nome e data.</p>` : ''}
     ${ev.automatico ? `<button class="btn ghost" id="prove">Mandami le mail di prova</button>
       <p class="muted">Ti arrivano la mail di pagamento, l'invito e la richiesta di feedback di questo evento.</p>` : ''}
     <button class="btn ghost" id="archivia">${ev.archiviato ? 'Riattiva evento' : 'Archivia evento'}</button>
@@ -485,17 +512,23 @@ const CON_OPZIONI = ['scelta', 'caselle', 'menu'];
 const ICO_COPIA = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>';
 const ICO_CESTINO = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M15 4V3H9v1H4v2h1v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6h1V4h-5zm2 15H7V6h10v13zM9 8h2v9H9zm4 0h2v9h-2z"/></svg>';
 function nuovaDomanda() { return { titolo: '', tipo: 'scelta', opzioni: [''], altro: false, obbligatoria: false }; }
-function apriNuovo() {
+// m = evento da duplicare (getModelloEvento), oppure niente per un evento vuoto
+function apriNuovo(m) {
   S.view = 'nuovo'; S.turno++;
-  S.nuovo = { creaForm: true, domande: [], attiva: -1 };
-  $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = 'Nuovo evento';
-  main.innerHTML = `<div class="card">
+  S.nuovo = { creaForm: true, attiva: -1, domande: [], descrizione: '', posti: '', immagine: '', anteprima: '', immagineDa: '' };
+  if (m) Object.assign(S.nuovo, {
+    domande: m.domande.map(d => Object.assign({}, d, { opzioni: d.opzioni.length ? d.opzioni.slice() : [''] })),
+    descrizione: m.descrizione || '', posti: m.posti ? String(m.posti) : '',
+    anteprima: m.immagine || '', immagineDa: m.immagine ? m.da : '' });
+  const v = x => m && x ? esc(x) : '';
+  $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = m ? 'Duplica evento' : 'Nuovo evento';
+  main.innerHTML = (m ? `<div class="notice">Copiato da “${esc(m.titolo)}”: scrivi il nome e la data del nuovo evento.</div>` : '') + `<div class="card">
     <label>Nome evento</label><input id="n-nome" type="text" placeholder="es. Ufficio Time novembre">
     <label>Data</label><input id="n-data" type="date">
-    <div style="display:flex;gap:8px"><div style="flex:1"><label>Dalle</label><input id="n-ora1" type="time"></div>
-      <div style="flex:1"><label>Alle</label><input id="n-ora2" type="time"></div></div>
-    <label>Luogo</label><input id="n-luogo" type="text" placeholder="es. S2E Via Palmanova 67">
-    <label>Prezzo a persona (€)</label><input id="n-prezzo" type="text" inputmode="decimal" placeholder="15">
+    <div style="display:flex;gap:8px"><div style="flex:1"><label>Dalle</label><input id="n-ora1" type="time" value="${v(m && m.oraInizio)}"></div>
+      <div style="flex:1"><label>Alle</label><input id="n-ora2" type="time" value="${v(m && m.oraFine)}"></div></div>
+    <label>Luogo</label><input id="n-luogo" type="text" placeholder="es. S2E Via Palmanova 67" value="${v(m && m.luogo)}">
+    <label>Prezzo a persona (€)</label><input id="n-prezzo" type="text" inputmode="decimal" placeholder="15" value="${m && m.prezzo ? String(m.prezzo).replace('.', ',') : ''}">
   </div>
   <div id="n-parte"></div>
   <button class="btn" id="n-crea">Crea evento</button>`;
@@ -504,7 +537,18 @@ function apriNuovo() {
 function disegnaParteNuovo(focus) {
   const n = S.nuovo;
   $('#n-parte').innerHTML = n.creaForm
-    ? `<div class="sez">Modulo di iscrizione</div>
+    ? `<div class="card">
+        <label style="margin-top:0">Posti massimi (facoltativo)</label>
+        <input id="n-posti" type="text" inputmode="numeric" placeholder="Nessun limite" value="${esc(n.posti)}">
+        <div class="aiuto">Arrivati a quel numero di iscritti il modulo si chiude da solo.</div>
+        <label>Immagine dell'evento (facoltativa)</label>
+        ${n.anteprima ? `<img class="foto" src="${esc(n.anteprima)}" alt="">` : ''}
+        <div class="riga"><button class="btn small ghost" id="n-scegli">${n.anteprima ? 'Cambia immagine' : 'Scegli immagine'}</button>
+          ${n.anteprima ? '<button class="btn small ghost" id="n-noimg">Togli</button>' : ''}</div>
+        <input type="file" accept="image/*" id="n-img" hidden>
+        <div class="aiuto">Va in cima al modulo e alle mail.</div>
+      </div>
+      <div class="sez">Modulo di iscrizione</div>
       <div class="card">
         <label>Descrizione (facoltativa)</label><textarea id="n-desc" placeholder="Cosa si fa, cosa portare…">${esc(n.descrizione || '')}</textarea>
         <div class="muted" style="margin-top:8px">Nome, Cognome ed email ci sono già.</div>
@@ -581,6 +625,10 @@ async function inviaNuovoEvento() {
       opzioni: CON_OPZIONI.includes(d.tipo) ? d.opzioni.map(x => x.trim()).filter(Boolean) : [] }));
     const vuota = e.domande.find(d => CON_OPZIONI.includes(d.tipo) && !d.opzioni.length);
     if (vuota) return toast('Scrivi almeno un\'opzione per "' + vuota.titolo + '"', true);
+    e.posti = String(n.posti || '').trim();
+    if (e.posti && !/^\d+$/.test(e.posti)) return toast('Posti massimi: scrivi un numero', true);
+    e.immagine = n.immagine ? n.immagine.split(',')[1] : '';
+    e.immagineDa = !n.immagine && n.anteprima ? n.immagineDa : '';
   } else {
     e.link = $('#n-link').value.trim(); e.scheda = $('#n-tab').value.trim();
   }
@@ -590,6 +638,94 @@ async function inviaNuovoEvento() {
     toast('Evento creato'); S.tab = n.creaForm ? 'conti' : 'iscritti'; S.filtro = 'da'; S.cerca = '';
     apriEvento(r.nome);
   } catch (err) { toast(errMsg(err), true); $('#n-crea').disabled = false; $('#n-crea').textContent = 'Crea evento'; }
+}
+
+// ---------- Immagini ----------
+// Riduce la foto (max 1200 px, JPEG) prima di mandarla: arriva prima ed entra nelle mail.
+async function riduciImmagine(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = url; });
+    const k = Math.min(1, 1200 / Math.max(img.naturalWidth, img.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.85);
+  } finally { URL.revokeObjectURL(url); }
+}
+async function immagineNuovo(file) {
+  try { const d = await riduciImmagine(file); Object.assign(S.nuovo, { immagine: d, anteprima: d, immagineDa: '' }); disegnaParteNuovo(); }
+  catch (e) { toast('Non riesco a leggere questa immagine', true); }
+}
+async function immagineEvento(file) {
+  const b = $('#img-scegli'); if (b) { b.disabled = true; b.textContent = 'Caricamento…'; }
+  try {
+    const d = file ? await riduciImmagine(file) : '';
+    await call('setImmagine', S.ev.nome, d ? d.split(',')[1] : '');
+    toast(d ? 'Immagine salvata' : 'Immagine tolta');
+    await apriEvento(S.ev.nome, true);
+  } catch (e) { toast(errMsg(e), true); if (b) { b.disabled = false; b.textContent = 'Riprova'; } }
+}
+
+// ---------- Posti e duplica ----------
+async function salvaPosti() {
+  const v = $('#posti').value.trim();
+  if (v && !/^\d+$/.test(v)) return toast('Scrivi un numero', true);
+  try {
+    const r = await call('setPosti', S.ev.nome, v ? Number(v) : 0);
+    toast(v ? 'Posti: ' + v + (r.esaurito ? ' · modulo chiuso' : '') : 'Nessun limite di posti');
+    await apriEvento(S.ev.nome, true);
+  } catch (e) { toast(errMsg(e), true); }
+}
+async function duplica() {
+  $('#duplica').disabled = true;
+  try {
+    const m = await call('getModelloEvento', S.ev.nome);
+    m.da = S.ev.nome;
+    apriNuovo(m);
+    if (m.saltate) toast(m.saltate + (m.saltate === 1 ? ' domanda' : ' domande') + ' di un tipo che l\'app non sa creare: aggiungile dal modulo', true);
+  } catch (e) { toast(errMsg(e), true); const b = $('#duplica'); if (b) b.disabled = false; }
+}
+
+// ---------- Aspetto e testi ----------
+async function apriImpostazioni() {
+  S.view = 'impostazioni';
+  const turno = ++S.turno;
+  $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = 'Aspetto e testi';
+  main.innerHTML = '<div class="spin">Caricamento…</div>';
+  let campi;
+  try { campi = await call('getImpostazioni'); } catch (e) { return turno === S.turno && errore(e); }
+  if (turno !== S.turno) return;
+  S.imp = campi;
+  const gruppi = [];
+  campi.forEach(c => { let g = gruppi.find(x => x.nome === c.g); if (!g) gruppi.push(g = { nome: c.g, campi: [] }); g.campi.push(c); });
+  const campo = c => {
+    const id = 'imp-' + c.k.replace(/\W/g, '_'), a = `id="${id}" data-imp="${esc(c.k)}"`;
+    const input = c.t === 'colore' ? `<div class="colori"><input type="color" ${a} value="${esc(c.v)}"><span class="muted">${esc(c.v)}</span></div>`
+      : c.t === 'lungo' ? `<textarea ${a}>${esc(c.v)}</textarea>`
+      : `<input ${a} type="${c.t === 'link' ? 'url' : 'text'}" ${c.t === 'numero' ? 'inputmode="numeric"' : ''} value="${esc(c.v)}">`;
+    return `<label for="${id}">${esc(c.l)}</label>${input}${c.h ? `<div class="aiuto">${esc(c.h)}</div>` : ''}`;
+  };
+  main.innerHTML = '<p class="muted" style="margin-top:4px">Valgono per tutti gli eventi. Nei testi, {TITOLO} diventa il nome dell\'evento.</p>' +
+    gruppi.map(g => `<div class="sez">${esc(g.nome)}</div><div class="card">${g.campi.map(campo).join('')}</div>`).join('') +
+    `<button class="btn" id="imp-salva">Salva</button>
+    <p class="muted">Per vedere come escono le mail: apri un evento → Conti → Mandami le mail di prova.</p>`;
+}
+async function salvaImpostazioni() {
+  // manda solo quello che è cambiato: il resto continua a seguire il CONFIG dello script
+  const valori = {};
+  document.querySelectorAll('[data-imp]').forEach(el => {
+    const c = S.imp.find(x => x.k === el.dataset.imp);
+    if (c && String(el.value).trim() !== String(c.v).trim()) valori[c.k] = el.value;
+  });
+  if (!Object.keys(valori).length) return toast('Nessuna modifica');
+  const b = $('#imp-salva'); b.disabled = true; b.textContent = 'Salvataggio…';
+  try {
+    await call('salvaImpostazioni', valori);
+    Object.keys(valori).forEach(k => { S.imp.find(x => x.k === k).v = valori[k]; });
+    toast('Salvato: le prossime mail escono così');
+  } catch (e) { toast(errMsg(e), true); }
+  b.disabled = false; b.textContent = 'Salva';
 }
 
 function errore(e) {
@@ -603,6 +739,7 @@ document.addEventListener('click', ev => {
   const d = t.dataset;
   if (t.id === 'back') return apriEventi();
   if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'feedback') return apriFeedbackTutti();
+  if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'impostazioni') return apriImpostazioni();
   if (t.id === 'reload' || t.id === 'riprova') return S.view === 'evento' && S.ev ? apriEvento(S.ev.nome) : apriEventi();
   if (t.id === 'fab') return apriNuovo();
   if (t.id === 'entra') return entra();
@@ -612,6 +749,14 @@ document.addEventListener('click', ev => {
   if (t.id === 'archivio') { S.archivio = !S.archivio; return disegnaEventi(); }
   if (t.id === 'condividi') return condividi();
   if (t.id === 'fb-tutti') return apriFeedbackTutti();
+  if (t.id === 'impost') return apriImpostazioni();
+  if (t.id === 'imp-salva') return salvaImpostazioni();
+  if (t.id === 'n-scegli') return $('#n-img').click();
+  if (t.id === 'n-noimg') { Object.assign(S.nuovo, { immagine: '', anteprima: '', immagineDa: '' }); return disegnaParteNuovo(); }
+  if (t.id === 'img-scegli') return $('#img-file').click();
+  if (t.id === 'img-togli') return confirm('Togliere l\'immagine dell\'evento?') && immagineEvento(null);
+  if (t.id === 'posti-salva') return salvaPosti();
+  if (t.id === 'duplica') return duplica();
   if (t.id === 'prove') return prove();
   if (d.reinvia) return reinvia(Number(d.reinvia));
   if (t.id === 'archivia') return archivia();
@@ -634,11 +779,15 @@ document.addEventListener('input', ev => {
   if (t.id === 'n-desc') S.nuovo.descrizione = t.value;
   if (t.id === 'n-link') S.nuovo.link = t.value;
   if (t.id === 'n-tab') S.nuovo.tab = t.value;
+  if (t.id === 'n-posti') S.nuovo.posti = t.value;
+  if (t.type === 'color' && t.nextElementSibling) t.nextElementSibling.textContent = t.value;
   if (t.dataset.o !== undefined) S.nuovo.domande[Number(t.dataset.q)].opzioni[Number(t.dataset.o)] = t.value;
   else if (t.dataset.k === 'titolo') S.nuovo.domande[Number(t.dataset.q)].titolo = t.value;
 });
 document.addEventListener('change', ev => {
   const t = ev.target;
+  if (t.id === 'n-img' && t.files[0]) return immagineNuovo(t.files[0]);
+  if (t.id === 'img-file' && t.files[0]) return immagineEvento(t.files[0]);
   if (t.dataset.q === undefined || !S.nuovo) return;
   const q = S.nuovo.domande[Number(t.dataset.q)];
   if (t.dataset.k === 'obbligatoria') q.obbligatoria = t.checked;
