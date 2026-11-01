@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>BrushCorner</title>
+<title>Conti eventi</title>
 <meta name="theme-color" content="#7f2a2a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="BrushCorner">
+<meta name="apple-mobile-web-app-title" content="Conti eventi">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icona-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -140,7 +140,7 @@
 <body>
 <header>
   <button id="back" hidden>‹ Eventi</button>
-  <h1 id="title">BrushCorner</h1>
+  <h1 id="title">Conti eventi</h1>
   <button id="reload" aria-label="Aggiorna">↻</button>
 </header>
 <main id="main"><div class="spin">Caricamento…</div></main>
@@ -198,8 +198,9 @@ function memo(k, v) {
 
 // ---------- Eventi ----------
 async function apriEventi() {
+  if (S.ricarica) return location.reload();
   S.view = 'eventi'; S.ev = null;
-  $('#back').hidden = true; $('#title').textContent = 'BrushCorner';
+  $('#back').hidden = true; $('#title').textContent = 'Conti eventi';
   $('#fab').hidden = false; $('#fab').textContent = '+ Nuovo evento';
   main.innerHTML = '<div class="spin">Caricamento…</div>';
   const turno = ++S.turno;
@@ -343,7 +344,8 @@ function vistaConti(ev, k) {
         <button class="btn small" id="condividi">Condividi link</button>
         ${ev.linkModifica ? `<a class="btn ghost" href="${esc(ev.linkModifica)}" target="_blank">Modifica le domande del modulo</a>` : ''}
       </div>` : ''}
-    ${ev.creatoDaApp ? `<div class="sez">Immagine</div>
+    ${ev.creatoDaApp ? `<button class="btn ghost" id="dettagli">Modifica titolo, data, luogo e prezzo</button>
+      <div class="sez">Immagine</div>
       <div class="card">${ev.immagine ? `<img class="foto" src="${esc(ev.immagine)}" alt="" style="margin-top:0" onerror="this.style.display='none'">`
           : '<div class="muted">Nessuna immagine: modulo e mail escono solo con il titolo.</div>'}
         <div class="riga"><button class="btn small ghost" id="img-scegli">${ev.immagine ? 'Cambia immagine' : 'Aggiungi immagine'}</button>
@@ -357,8 +359,11 @@ function vistaConti(ev, k) {
         <div class="aiuto">Arrivati a quel numero di iscritti il modulo si chiude da solo. Se togli qualcuno dal foglio, si riapre.</div></div>
       <button class="btn ghost" id="duplica">Duplica evento</button>
       <p class="muted">Crea un evento nuovo con le stesse domande, prezzo, luogo e immagine: cambi solo nome e data.</p>` : ''}
-    ${ev.automatico ? `<button class="btn ghost" id="prove">Mandami le mail di prova</button>
-      <p class="muted">Ti arrivano la mail di pagamento, l'invito e la richiesta di feedback di questo evento.</p>` : ''}
+    ${ev.automatico ? `<div class="sez">Mail di prova</div>
+      <div class="card"><input id="prove-a" type="email" placeholder="A chi (vuoto = a te)" value="${esc(memo('prove') || '')}" autocomplete="email">
+        <button class="btn" id="prove" style="margin-bottom:0">Manda le mail di prova</button>
+        <div class="aiuto">Arrivano la mail di pagamento, l'invito e la richiesta di feedback di questo evento.
+          Per vedere l'invito entrare nel calendario come per un iscritto, mandale a un altro indirizzo: a te stesso Gmail non lo aggiunge.</div></div>` : ''}
     <button class="btn ghost" id="archivia">${ev.archiviato ? 'Riattiva evento' : 'Archivia evento'}</button>
     <p class="muted">${ev.archiviato ? 'L\'evento è in archivio' + (ev.linkIscrizione ? ' e il modulo non accetta iscrizioni.' : '.')
       : 'Archiviando, l\'evento passa nello storico' + (ev.linkIscrizione ? ' e il modulo smette di accettare iscrizioni.' : '.')}</p>
@@ -445,10 +450,74 @@ async function reinvia(riga) {
   catch (e) { toast(errMsg(e), true); }
 }
 async function prove() {
+  const a = $('#prove-a').value.trim();
   $('#prove').disabled = true;
-  try { const r = await call('inviaProve', S.ev.nome); toast('Mail di prova inviate a ' + r.email); }
+  try { const r = await call('inviaProve', S.ev.nome, a); memo('prove', a); toast('Mail di prova inviate a ' + r.email); }
   catch (e) { toast(errMsg(e), true); }
   const b = $('#prove'); if (b) b.disabled = false;
+}
+
+// ---------- Modifica dettagli ----------
+async function apriDettagli() {
+  const nome = S.ev.nome;
+  S.view = 'dettagli';
+  const turno = ++S.turno;
+  $('#fab').hidden = true; $('#title').textContent = 'Modifica dettagli';
+  main.innerHTML = '<div class="spin">Caricamento…</div>';
+  let d;
+  try { d = await call('getDettagliEvento', nome); } catch (e) { return turno === S.turno && errore(e); }
+  if (turno !== S.turno) return;
+  S.det = { prima: d, ultimi: { titolo: d.titolo, luogo: d.luogo } };
+  main.innerHTML = `<div class="card">
+      <label style="margin-top:0">Titolo</label><input id="d-titolo" type="text" value="${esc(d.titolo)}">
+      <label>Data</label><input id="d-data" type="date" value="${esc(d.data)}">
+      <div style="display:flex;gap:8px"><div style="flex:1"><label>Dalle</label><input id="d-ora1" type="time" value="${esc(d.oraInizio)}"></div>
+        <div style="flex:1"><label>Alle</label><input id="d-ora2" type="time" value="${esc(d.oraFine)}"></div></div>
+      <label>Luogo</label><input id="d-luogo" type="text" value="${esc(d.luogo)}">
+      <label>Prezzo a persona (€)</label><input id="d-prezzo" type="text" inputmode="decimal" value="${String(d.prezzo).replace('.', ',')}">
+      <div class="aiuto">Il prezzo nuovo vale anche nei conti di chi ha già pagato: per chi ha pagato una cifra diversa usa “Offerta”.</div>
+    </div>
+    <div class="sez">Descrizione del modulo</div>
+    <div class="card"><textarea id="d-desc" rows="9">${esc(d.descrizione)}</textarea>
+      <div class="aiuto">Quando cambi i dettagli qui sopra, si aggiornano da soli anche qui dove li trovo scritti uguali
+        (e nelle righe “Data:”, “Luogo:” e “Quota:” scritte dall'app). Il resto lo correggi tu. Se la descrizione cambia, nel modulo grassetto e corsivo si perdono.</div></div>
+    ${d.invitati ? `<div class="card"><label class="tog" style="margin:0">${d.invitati === 1 ? 'Manda l\'invito aggiornato all\'unica persona che l\'ha già ricevuto' : 'Manda l\'invito aggiornato ai ' + d.invitati + ' che l\'hanno già ricevuto'} <input type="checkbox" id="d-avvisa"><i></i></label>
+      <div class="aiuto">Ricevono la mail “Aggiornamento” con i dettagli nuovi e l'evento nel loro calendario si sposta.</div></div>` : ''}
+    <button class="btn" id="d-salva">Salva</button>
+    <p class="muted">Le mail da ora in poi usano i dettagli nuovi. Il nome della scheda nei conti resta “${esc(nome)}”.</p>`;
+}
+function aggiornaDescrizione(k, el) {
+  // titolo e luogo cambiati: li sostituisce anche nella descrizione, se c'erano scritti uguali
+  const prima = S.det.ultimi[k], ora = el.value, t = $('#d-desc');
+  if (prima && ora && prima !== ora && t.value.indexOf(prima) >= 0) t.value = t.value.split(prima).join(ora);
+  if (ora) S.det.ultimi[k] = ora;
+}
+function aggiornaRigheApp() {
+  // righe che l'app scrive nella descrizione quando crea il modulo
+  const t = $('#d-desc'), data = $('#d-data').value, o1 = $('#d-ora1').value, o2 = $('#d-ora2').value;
+  const prezzo = Number(String($('#d-prezzo').value).replace(',', '.'));
+  if (data) t.value = t.value.replace(/^Data: .*$/m, 'Data: ' + dataIt(data) + (o1 ? ', ore ' + o1 + (o2 ? '–' + o2 : '') : ''));
+  if (prezzo > 0) t.value = t.value.replace(/^Quota: .*$/m, 'Quota: ' + prezzo.toFixed(2).replace('.', ',') + ' €');
+  const l = $('#d-luogo').value.trim();
+  if (l) t.value = t.value.replace(/^Luogo: .*$/m, 'Luogo: ' + l);
+}
+async function salvaDettagli() {
+  const d = { titolo: $('#d-titolo').value.trim(), data: $('#d-data').value, oraInizio: $('#d-ora1').value, oraFine: $('#d-ora2').value,
+    luogo: $('#d-luogo').value.trim(), prezzo: Number(String($('#d-prezzo').value).replace(',', '.')),
+    avvisa: !!($('#d-avvisa') && $('#d-avvisa').checked) };
+  if (!d.titolo) return toast('Scrivi il titolo', true);
+  if (!d.data || !d.oraInizio) return toast('Scrivi data e ora di inizio', true);
+  if (!(d.prezzo > 0)) return toast('Scrivi il prezzo pieno', true);
+  if ($('#d-desc').value.trim() !== S.det.prima.descrizione.trim()) d.descrizione = $('#d-desc').value;
+  if (d.avvisa && !confirm('Mandare l\'invito aggiornato a ' + S.det.prima.invitati + (S.det.prima.invitati === 1 ? ' persona?' : ' persone?'))) return;
+  const b = $('#d-salva'); b.disabled = true; b.textContent = d.avvisa ? 'Salvo e mando gli inviti…' : 'Salvataggio…';
+  try {
+    const r = await call('modificaEvento', S.ev.nome, d);
+    toast(!r.cambi.length ? 'Nessuna modifica' : r.avvisati ? 'Salvato, invito aggiornato a ' + r.avvisati : 'Salvato', !!r.avviso);
+    if (r.avviso) alert(r.avviso);
+    S.tab = 'conti';
+    await apriEvento(S.ev.nome);
+  } catch (e) { toast(errMsg(e), true); b.disabled = false; b.textContent = 'Salva'; }
 }
 
 // ---------- Azioni ----------
@@ -737,7 +806,8 @@ document.addEventListener('click', ev => {
   const t = ev.target.closest('button');
   if (!t) return;
   const d = t.dataset;
-  if (t.id === 'back') return apriEventi();
+  if (t.id === 'back') return S.view === 'dettagli' && S.ev ? apriEvento(S.ev.nome) : apriEventi();
+  if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'dettagli') return apriDettagli();
   if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'feedback') return apriFeedbackTutti();
   if ((t.id === 'reload' || t.id === 'riprova') && S.view === 'impostazioni') return apriImpostazioni();
   if (t.id === 'reload' || t.id === 'riprova') return S.view === 'evento' && S.ev ? apriEvento(S.ev.nome) : apriEventi();
@@ -757,6 +827,8 @@ document.addEventListener('click', ev => {
   if (t.id === 'img-togli') return confirm('Togliere l\'immagine dell\'evento?') && immagineEvento(null);
   if (t.id === 'posti-salva') return salvaPosti();
   if (t.id === 'duplica') return duplica();
+  if (t.id === 'dettagli') return apriDettagli();
+  if (t.id === 'd-salva') return salvaDettagli();
   if (t.id === 'prove') return prove();
   if (d.reinvia) return reinvia(Number(d.reinvia));
   if (t.id === 'archivia') return archivia();
@@ -780,6 +852,9 @@ document.addEventListener('input', ev => {
   if (t.id === 'n-link') S.nuovo.link = t.value;
   if (t.id === 'n-tab') S.nuovo.tab = t.value;
   if (t.id === 'n-posti') S.nuovo.posti = t.value;
+  if (t.id === 'd-titolo') aggiornaDescrizione('titolo', t);
+  if (t.id === 'd-luogo') aggiornaDescrizione('luogo', t);
+  if (['d-data', 'd-ora1', 'd-ora2', 'd-prezzo', 'd-luogo'].includes(t.id)) aggiornaRigheApp();
   if (t.type === 'color' && t.nextElementSibling) t.nextElementSibling.textContent = t.value;
   if (t.dataset.o !== undefined) S.nuovo.domande[Number(t.dataset.q)].opzioni[Number(t.dataset.o)] = t.value;
   else if (t.dataset.k === 'titolo') S.nuovo.domande[Number(t.dataset.q)].titolo = t.value;
@@ -819,7 +894,7 @@ document.addEventListener('focusin', ev => {
 // ---------- Accesso ----------
 function apriLogin(msg) {
   S.view = 'login'; S.turno++;
-  $('#back').hidden = true; $('#fab').hidden = true; $('#title').textContent = 'BrushCorner';
+  $('#back').hidden = true; $('#fab').hidden = true; $('#title').textContent = 'Conti eventi';
   main.innerHTML = `<div class="login">
     <img src="icona-192.png" alt="">
     <h2>Benvenuto</h2>
@@ -847,7 +922,35 @@ async function entra() {
 function esci() {
   if (!confirm('Uscire? Per rientrare servirà di nuovo il codice.')) return;
   memo('codice', ''); apriLogin();
+  controllaVersione(true);
 }
+
+// ---------- Aggiornamento automatico ----------
+// Quando l'app torna in primo piano (o all'uscita) controlla se su GitHub c'è un index.html nuovo:
+// se sì si ricarica da sola, così nessuno deve disinstallarla. Mai mentre si sta compilando qualcosa.
+let firmaApp = null;
+async function firmaIndex() {
+  const t = await (await fetch('index.html', { cache: 'no-store' })).text();
+  let h = 0;
+  for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+  return h;
+}
+async function controllaVersione(subito) {
+  try {
+    const f = await firmaIndex();
+    if (firmaApp === null) { firmaApp = f; return; }
+    if (f === firmaApp) return;
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update().catch(() => {});
+    }
+    if (subito || ['eventi', 'evento', 'login', 'feedback'].includes(S.view)) return location.reload();
+    toast('C\'è una versione nuova dell\'app: si aggiorna appena torni alla lista eventi');
+    firmaApp = f; S.ricarica = true;
+  } catch (e) { /* offline: si riprova la prossima volta */ }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') controllaVersione(); });
+controllaVersione();
 document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.id === 'codice') entra(); });
 
 if ('serviceWorker' in navigator) {

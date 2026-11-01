@@ -1,6 +1,6 @@
 // Tiene l'app sul telefono: si apre subito anche con rete lenta.
 // I dati arrivano sempre dallo script Google, non vengono salvati qui.
-const CACHE = 'conti-eventi-v4';
+const CACHE = 'conti-eventi-v7';
 const FILE = ['./', 'index.html', 'config.js', 'manifest.webmanifest', 'icona-192.png', 'icona-512.png', 'icona-maskable.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -22,7 +22,8 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
     return;
   }
-  e.respondWith(fetch(e.request)
+  // cache 'no-cache': chiede sempre a GitHub se il file è cambiato (senza, il browser tiene la copia vecchia fino a 10 minuti)
+  e.respondWith(fetch(e.request.url, { cache: 'no-cache', credentials: 'same-origin' })
     .then(r => { const copia = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copia)); return r; })
     .catch(() => caches.match(e.request).then(r => r || caches.match('index.html'))));
 });
