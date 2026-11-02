@@ -389,10 +389,11 @@ async function elimina() {
   const cosa = ev.linkIscrizione
     ? 'la sua scheda nei conti (con le uscite), il modulo e il foglio risposte (vanno nel Cestino di Drive per 30 giorni)'
     : 'la sua scheda nei conti (con le uscite)';
-  const r = prompt('Elimini "' + ev.titolo + '": ' + cosa + '.\nPer confermare scrivi il nome dell\'evento:');
+  // si scrive ELIMINA e non il nome: il nome della scheda può essere diverso dal titolo e avere emoji
+  const r = prompt('Elimini "' + ev.titolo + '": ' + cosa + '.\nPer confermare scrivi ELIMINA:');
   if (r === null) return;
-  if (r.trim() !== ev.nome) return toast('Il nome non corrisponde: non ho eliminato nulla', true);
-  try { await call('eliminaEvento', ev.nome, ev.nome); toast('Evento eliminato'); apriEventi(); }
+  // la conferma la controlla lo script: così anche un tentativo sbagliato finisce nel registro modifiche
+  try { await call('eliminaEvento', ev.nome, r.trim()); toast('Evento eliminato'); apriEventi(); }
   catch (e) { toast(errMsg(e), true); }
 }
 
