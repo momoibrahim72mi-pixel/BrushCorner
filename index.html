@@ -68,7 +68,7 @@
     font-size: 16px; font-weight: 600; margin-top: 14px; }
   .btn.small { width: auto; padding: 10px 14px; margin: 0; font-size: 15px; }
   .btn.ghost { background: var(--card); color: var(--accent); border: 1px solid var(--line); }
-  .pill { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); }
+  .pill { display: inline-block; white-space: nowrap; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); }
   .tot { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); }
   .tot:last-child { border-bottom: 0; }
   .tot.big { font-weight: 700; font-size: 18px; }
@@ -289,7 +289,9 @@ function vistaIscritti(ev, k) {
   const pagati = ev.iscritti.length - k.attesa;
   const chips = [['da', 'Da pagare ' + k.attesa], ['si', 'Pagati ' + pagati], ['tutti', 'Tutti ' + ev.iscritti.length]]
     .map(([id, t]) => `<button data-filtro="${id}" class="${S.filtro === id ? 'on' : ''}">${t}</button>`).join('');
-  return `<input id="cerca" type="search" placeholder="Cerca nome o causale" value="${esc(S.cerca)}" autocomplete="off">
+  const tornate = ev.iscritti.filter(p => p.nonConsegnata).length;
+  return (tornate ? `<div class="notice">${tornate === 1 ? '1 mail non è arrivata' : tornate + ' mail non sono arrivate'}: apri la persona segnata “Mail non arrivata”, correggi l'indirizzo nel foglio e rimanda la mail.</div>` : '') +
+    `<input id="cerca" type="search" placeholder="Cerca nome o causale" value="${esc(S.cerca)}" autocomplete="off">
     <div class="chips">${chips}</div>` +
     (lista.length ? lista.map(p => {
       const conf = S.conferma === p.riga;
@@ -301,11 +303,14 @@ function vistaIscritti(ev, k) {
         <div class="person"><button class="who apri" data-persona="${p.riga}"><b>${esc(p.nome)} <span class="chev">${S.persona === p.riga ? '▴' : '▾'}</span></b>
             <span>${esc(p.causale) || 'Tocca per vedere le risposte'}</span></button>
           <button class="pay ${btn}" data-pay="${p.riga}">${testo}</button></div>
-        <div class="row2">${prezzo}<span class="muted" style="flex:1">${esc(stato)}</span>
+        <div class="row2">${prezzo}${p.nonConsegnata ? '<span class="pill no">Mail non arrivata</span>' : ''}<span class="muted" style="flex:1">${esc(stato)}</span>
           <button class="link" data-apri="${p.riga}">${S.aperta === p.riga ? 'Chiudi' : 'Offerta'}</button></div>
         ${S.persona === p.riga ? `<div class="risp">${p.risposte.length ? p.risposte.map(([q, a]) =>
           `<div><div class="muted">${esc(q)}</div><div>${esc(a)}</div></div>`).join('') : '<div class="muted">Nessuna risposta.</div>'}
-          ${ev.automatico ? `<button class="btn small ghost" data-reinvia="${p.riga}">Reinvia mail di pagamento</button>` : ''}</div>` : ''}
+          ${p.nonConsegnata ? `<div><div class="muted">Mail tornata indietro</div><div style="color:var(--err)">${esc(p.nonConsegnata)}</div></div>` : ''}
+          ${ev.automatico ? `<button class="btn small ghost" data-reinvia="${p.riga}">Reinvia mail di pagamento</button>` : ''}
+          ${p.pagato ? '<div class="aiuto">Per eliminarlo, prima togli il pagato.</div>'
+            : `<button class="link" data-togli="${p.riga}" style="color:var(--err);margin-top:6px">Elimina iscritto</button>`}</div>` : ''}
         ${S.aperta === p.riga ? `<div class="off"><input id="off-${p.riga}" type="text" inputmode="decimal"
              placeholder="Prezzo pagato, es. 12" value="${p.offerta > 0 ? p.offerta : ''}">
            <button class="btn small" data-off="${p.riga}">Salva</button>
@@ -443,6 +448,16 @@ function apriFeedbackTutti() {
   $('#back').hidden = false; $('#fab').hidden = true; $('#title').textContent = 'Feedback';
   main.innerHTML = '<div id="fb"><div class="spin">Caricamento…</div></div>';
   caricaFeedback('');
+}
+async function togliIscritto(riga) {
+  const p = S.ev.iscritti.find(x => x.riga === riga);
+  const r = prompt('Elimini ' + p.nome + ' dagli iscritti: la sua riga sparisce dal foglio risposte e il posto si libera.\nPer confermare scrivi ELIMINA:');
+  if (r === null) return;
+  // la conferma la controlla lo script: anche un tentativo sbagliato finisce nel registro modifiche
+  try {
+    await call('eliminaIscritto', S.ev.nome, riga, p.codice || p.causale, r.trim());
+    toast(p.nome + ' eliminato'); S.persona = null; await apriEvento(S.ev.nome, true);
+  } catch (e) { toast(errMsg(e), true); }
 }
 async function reinvia(riga) {
   const p = S.ev.iscritti.find(x => x.riga === riga);
@@ -832,6 +847,7 @@ document.addEventListener('click', ev => {
   if (t.id === 'd-salva') return salvaDettagli();
   if (t.id === 'prove') return prove();
   if (d.reinvia) return reinvia(Number(d.reinvia));
+  if (d.togli) return togliIscritto(Number(d.togli));
   if (t.id === 'archivia') return archivia();
   if (t.id === 'elimina') return elimina();
   if (S.view === 'nuovo' && azioneDomanda(t, d)) return;
